@@ -1,0 +1,12 @@
+.venv/
+build/
+dist/
+*.app/
+__pycache__/
+*.pyc
+.DS_Store
+
+# 底包解压目录、解析出来的堆栈结果都不入库
+samples/*-release/
+out/
+*.stack.txt

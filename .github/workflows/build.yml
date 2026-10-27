@@ -1,0 +1,47 @@
+name: build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths-ignore:
+      - "**.md"
+      - ".gitignore"
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pyinstaller
+      - run: python app.py --selftest
+      - run: >
+          pyinstaller --noconfirm --clean --windowed
+          --name stacklens
+          --osx-bundle-identifier com.local.stacklens
+          app.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stacklens-macos
+          path: dist/stacklens.app
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pyinstaller
+      - run: python app.py --selftest
+      - run: >
+          pyinstaller --noconfirm --clean --windowed --onefile
+          --name stacklens
+          app.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: stacklens-windows
+          path: dist/stacklens.exe

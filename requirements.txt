@@ -1,0 +1,4 @@
+# StackLens 目前只用 Python 标准库（json / re / subprocess / tkinter）。
+# 这里留空是为了让 CI 和本地打包脚本有统一的依赖入口；
+# 以后要加第三方库（比如颜色高亮、rich 输出）直接往下写：
+# rich>=13.7
