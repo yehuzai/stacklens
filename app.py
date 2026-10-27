@@ -29,6 +29,18 @@ import core
 APP_TITLE = "StackLens"
 APP_VERSION = "1.0.0"
 
+
+def configure_console_encoding():
+    """Keep Chinese CLI output usable on Windows CI and legacy terminals."""
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            try:
+                reconfigure(encoding="utf-8", errors="replace")
+            except (AttributeError, OSError, ValueError):
+                pass
+
+
 if sys.platform == "darwin":
     BASE_FONT = ("PingFang SC", 13)
     MONO = ("Menlo", 12)
@@ -345,6 +357,7 @@ def selftest(argv):
 # ---------------------------------------------------------------------------
 
 def main():
+    configure_console_encoding()
     argv = sys.argv[1:]
     if "--selftest" in argv:
         rest = [a for a in argv if a != "--selftest"]
