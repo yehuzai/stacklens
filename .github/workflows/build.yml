@@ -8,6 +8,9 @@ on:
       - "**.md"
       - ".gitignore"
 
+permissions:
+  contents: write
+
 jobs:
   macos:
     runs-on: macos-latest
@@ -45,3 +48,44 @@ jobs:
         with:
           name: stacklens-windows
           path: dist/stacklens.exe
+
+  release:
+    needs: [macos, windows]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Package release assets
+        run: |
+          mkdir -p release/stacklens.app
+          cp -R artifacts/stacklens-macos/Contents release/stacklens.app/Contents
+          chmod +x release/stacklens.app/Contents/MacOS/stacklens
+          ditto -c -k --keepParent release/stacklens.app release/stacklens-macos.zip
+          cp artifacts/stacklens-windows/stacklens.exe release/stacklens.exe
+
+          mac_sha="$(shasum -a 256 release/stacklens-macos.zip | awk '{print $1}')"
+          win_sha="$(shasum -a 256 release/stacklens.exe | awk '{print $1}')"
+          sed \
+            -e "s|<macos zip 的 sha256>|${mac_sha}|" \
+            -e "s|<exe 的 sha256>|${win_sha}|" \
+            NOTES.md > release-notes.md
+      - name: Verify packaged macOS app
+        run: release/stacklens.app/Contents/MacOS/stacklens --selftest
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v1.0.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload v1.0.0 \
+              release/stacklens-macos.zip release/stacklens.exe --clobber
+          else
+            gh release create v1.0.0 \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "v1.0.0 StackLens" \
+              --notes-file release-notes.md \
+              --latest \
+              release/stacklens-macos.zip release/stacklens.exe
+          fi
